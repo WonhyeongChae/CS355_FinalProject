@@ -4,8 +4,8 @@ GCC=g++
 GCCFLAGS=-O2 -Wall -Wextra -std=c++20 -pedantic -Wold-style-cast -Woverloaded-virtual -Wsign-promo  -Wctor-dtor-privacy -Wnon-virtual-dtor -Wreorder
 
 # I want to add all header files in src/include/
-OBJECTS0= src/include/*.h src/*.cpp
-DRIVER0=main.cpp
+OBJECTS0= src/include/*.h src/skip_list.cpp src/linked_list.cpp
+DRIVER0=src/main.cpp
 
 VALGRIND_OPTIONS=-q --leak-check=full
 
