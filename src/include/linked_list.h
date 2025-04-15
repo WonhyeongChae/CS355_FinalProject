@@ -109,21 +109,15 @@ public:
         return count;
     }
 
-    // **추가**: 리스트가 올바른 오름차순이고 중복/마킹 노드가 없는지 검사
     //  - return true if valid, false otherwise
     bool validate() {
         Node* curr = head;
         T prevVal = curr->value; // should be -∞ for head
         curr = getUnmarked(curr->next.load());
         while (curr && curr->value != std::numeric_limits<T>::max()) {
-            // 만약 현재 노드가 마킹되어 있으면, 논리 삭제됨 -> 무시해도 되지만
-            // 여기서는 "정확성 테스트"를 위해 만약 삭제된 노드가 남아있으면 invalid로 본다.
             if (isMarked(curr->next.load())) {
-                // 논문에서는 "물리삭제"를 통해 제거해야 한다고 하지만,
-                // 여기서는 단순히 invalid 판정
                 return false;
             }
-            // 오름차순 정렬 검사
             if (curr->value <= prevVal) {
                 return false;
             }
@@ -147,7 +141,6 @@ private:
                 // Physically remove marked nodes.
                 while (isMarked(succ)) {
                     if (!pred->next.compare_exchange_strong(curr, getUnmarked(succ))) {
-                        // CAS 실패 시 다시 처음부터
                         goto retry;
                     }
                     curr = getUnmarked(pred->next.load());
