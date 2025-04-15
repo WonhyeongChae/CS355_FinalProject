@@ -1,11 +1,11 @@
 PRG=out.exe 
 
 GCC=g++
-GCCFLAGS=-O2 -Wall -Wextra -std=c++17 -pedantic -Wold-style-cast -Woverloaded-virtual -Wsign-promo  -Wctor-dtor-privacy -Wnon-virtual-dtor -Wreorder
+GCCFLAGS=-O2 -Wall -Wextra -std=c++20 -pedantic -Wold-style-cast -Woverloaded-virtual -Wsign-promo  -Wctor-dtor-privacy -Wnon-virtual-dtor -Wreorder
 
 # I want to add all header files in src/include/
-OBJECTS0= src/include/*.h src/skip_list.cpp
-DRIVER0=src/main.cpp
+OBJECTS0= src/include/*.h src/*.cpp
+DRIVER0=main.cpp
 
 VALGRIND_OPTIONS=-q --leak-check=full
 
@@ -23,6 +23,6 @@ gcc0:
 	$(GCC) -o $(PRG) $(DRIVER0) $(OBJECTS0) $(GCCFLAGS) 
 0 1 2 3 4 5 6 7:
 	@echo "running test$@"
-	./build/Release/$(PRG) > test$@.txt
+	./build/$(PRG) > test$@.txt
 clean:
 	rm -f *.exe *.o

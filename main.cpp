@@ -6,7 +6,7 @@
 
 #include <iostream>
 
-#include "include/skip_list.h"
+#include "skip_list.h"
 
 #ifdef _WIN32
     DWORD WINAPI thread1(LPVOID param) {
