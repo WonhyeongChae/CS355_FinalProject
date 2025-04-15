@@ -33,7 +33,7 @@ private:
 
 public:
     LockFreeLinkedList() {
-        // Create head and tail sentinels.
+        // Create head and tail sentinel nodes.
         head = new Node(std::numeric_limits<T>::min());
         Node* tail = new Node(std::numeric_limits<T>::max());
         head->next.store(tail);
@@ -71,7 +71,7 @@ public:
             if (pred->next.compare_exchange_strong(curr, newNode)) {
                 return true;
             }
-            delete newNode;
+            delete newNode; // CAS failed, retry
         }
     }
 
@@ -101,11 +101,30 @@ public:
         int count = 0;
         Node* curr = getUnmarked(head->next.load());
         while (curr && curr->value != std::numeric_limits<T>::max()) {
-            if (!isMarked(curr->next.load()))
+            if (!isMarked(curr->next.load())) {
                 count++;
+            }
             curr = getUnmarked(curr->next.load());
         }
         return count;
+    }
+
+    //  - return true if valid, false otherwise
+    bool validate() {
+        Node* curr = head;
+        T prevVal = curr->value; // should be -∞ for head
+        curr = getUnmarked(curr->next.load());
+        while (curr && curr->value != std::numeric_limits<T>::max()) {
+            if (isMarked(curr->next.load())) {
+                return false;
+            }
+            if (curr->value <= prevVal) {
+                return false;
+            }
+            prevVal = curr->value;
+            curr = getUnmarked(curr->next.load());
+        }
+        return true;
     }
 
 private:
@@ -122,16 +141,18 @@ private:
                 // Physically remove marked nodes.
                 while (isMarked(succ)) {
                     if (!pred->next.compare_exchange_strong(curr, getUnmarked(succ))) {
-                        break;
+                        goto retry;
                     }
                     curr = getUnmarked(pred->next.load());
                     succ = curr->next.load();
                 }
-                if (curr->value >= value)
+                if (curr->value >= value) {
                     return (curr->value == value);
+                }
                 pred = curr;
                 curr = getUnmarked(curr->next.load());
             }
+        retry:;
         }
         // (Unreachable)
         return false;
