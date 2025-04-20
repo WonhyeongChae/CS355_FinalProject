@@ -1,37 +1,43 @@
-// skip_list.cpp
 #include "skip_list.h"
 #include <thread>
 #include <iostream>
+#include <algorithm>
 
 Node* LockFreeSkipList::create_node(int key, int value, Node* down) {
-    return new Node(key, value, down);
+    std::lock_guard<std::mutex> lock(pool_mutex);
+    node_pool.push_back(std::make_unique<Node>(key, value, down));
+    return node_pool.back().get();
 }
 
 int LockFreeSkipList::random_level() {
-    static std::mt19937 gen(std::random_device{}());
-    static std::uniform_int_distribution<> dist(1, max_level);
-    return dist(gen);
+    static thread_local std::mt19937 gen(std::random_device{}());
+    std::uniform_int_distribution<> dist(1, max_level);
+    int level = 1;
+    while (dist(gen) % 2 == 0 && level < max_level) {
+        level++;
+    }
+    return level;
 }
 
-LockFreeSkipList::LockFreeSkipList(int max_lvl) : max_level(max_lvl) {
+void LockFreeSkipList::init_head_tail() {
     head = create_node(INT_MIN, 0);
     tail = create_node(INT_MAX, 0);
     head->next = tail;
-    current_levels = 1;
+    for (int i = 1; i < max_level; ++i) {
+        Node* new_head = create_node(INT_MIN, 0, head);
+        Node* new_tail = create_node(INT_MAX, 0, tail);
+        new_head->next = new_tail;
+        head = new_head;
+        tail = new_tail;
+    }
+    current_levels = max_level;
 }
 
-LockFreeSkipList::~LockFreeSkipList() {
-    Node* curr = head;
-    while (curr) {
-        Node* next = curr->down.load();
-        while (curr) {
-            Node* temp = curr;
-            curr = curr->next;
-            delete temp;
-        }
-        curr = next;
-    }
+LockFreeSkipList::LockFreeSkipList(int max_lvl) : max_level(max_lvl) {
+    init_head_tail();
 }
+
+LockFreeSkipList::~LockFreeSkipList() {}
 
 bool LockFreeSkipList::insert(int key, int value) {
     std::vector<Node*> preds(max_level);
@@ -39,18 +45,33 @@ bool LockFreeSkipList::insert(int key, int value) {
     
     while (true) {
         Node* pred = head;
-        Node* curr = nullptr;
+        bool retry = false;
         for (int level = current_levels - 1; level >= 0; --level) {
-            curr = pred->next;
-            while (curr->key < key) {
-                pred = curr;
-                curr = curr->next;
+            Node* curr = pred->next;
+            while (true) {
+                Node* next = curr->next;
+                while (curr->marked) {
+                    if (!pred->next.compare_exchange_weak(curr, next)) {
+                        retry = true;
+                        break;
+                    }
+                    curr = pred->next;
+                }
+                if (retry) break;
+                if (curr->key < key) {
+                    pred = curr;
+                    curr = next;
+                } else {
+                    break;
+                }
             }
+            if (retry) break;
             preds[level] = pred;
             succs[level] = curr;
         }
-        if (curr->key == key) {
-            return false; // 이미 존재
+        if (retry) continue;
+        if (succs[0]->key == key) {
+            return false;
         }
 
         Node* down = nullptr;
@@ -63,12 +84,16 @@ bool LockFreeSkipList::insert(int key, int value) {
                 succs[level] = tail;
             }
             if (!preds[level]->next.compare_exchange_weak(succs[level], newNode)) {
-                delete newNode;
+                std::this_thread::yield();
+                retry = true;
                 break;
             }
             down = newNode;
         }
-        return true;
+        if (!retry) {
+            current_levels.store(std::max(current_levels.load(), static_cast<int>(new_level)));
+            return true;
+        }
     }
 }
 
@@ -97,8 +122,9 @@ bool LockFreeSkipList::remove(int key) {
         if (!curr->flag.load() && 
             curr->marked.compare_exchange_strong(is_marked, true)) {
             Node* next = curr->next;
-            pred->next.compare_exchange_strong(curr, next);
-            return true;
+            if (pred->next.compare_exchange_strong(curr, next)) {
+                return true;
+            }
         }
     }
 }

@@ -88,7 +88,9 @@
 // --- End Linked List Worker Functions ---
 
 const int NUM_THREADS = 4;
-const int NUM_OPS = 100;
+const int NUM_OPS = 10000;
+
+std::atomic<int> insert_count{0};
 
 void test_single_thread() {
     LockFreeSkipList list;
@@ -109,9 +111,10 @@ void test_multi_thread() {
     auto start = std::chrono::high_resolution_clock::now();
     
     for (int i = 0; i < NUM_THREADS; ++i) {
-        threads.emplace_back([&list, i]() {
-            for (int j = i * NUM_OPS; j < (i+1) * NUM_OPS; ++j) {
-                list.insert(j, j);
+        threads.emplace_back([&list]() {
+            for (int j = 0; j < NUM_OPS; ++j) {
+                int key = insert_count.fetch_add(1, std::memory_order_relaxed);
+                list.insert(key, key);
             }
         });
     }

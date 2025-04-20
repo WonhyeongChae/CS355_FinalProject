@@ -1,8 +1,8 @@
-// skip_list.h
 #pragma once
 #include <atomic>
 #include <vector>
 #include <random>
+#include <memory>
 #include <mutex>
 #include <chrono>
 
@@ -24,9 +24,12 @@ private:
     Node* tail;
     int max_level;
     std::atomic<int> current_levels;
+    std::vector<std::unique_ptr<Node>> node_pool;
+    std::mutex pool_mutex;
 
     Node* create_node(int key, int value, Node* down = nullptr);
     int random_level();
+    void init_head_tail();
 
 public:
     LockFreeSkipList(int max_lvl = 20);
