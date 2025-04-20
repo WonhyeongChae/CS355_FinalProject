@@ -8,8 +8,8 @@
 #include <chrono>
 #include <cstdlib>
 
-#include "include/skip_list.h"
-#include "include/linked_list.h"
+#include "skip_list.h"
+#include "linked_list.h"
 
 #ifdef _WIN32
     DWORD WINAPI thread1(LPVOID param) {
