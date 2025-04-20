@@ -3,7 +3,7 @@ PRG=out.exe
 GCC=g++
 CLANG=clang++
 
-COMMON_FLAGS=-Wall -Wextra -std=c++20 -pedantic -Wold-style-cast -Woverloaded-virtual -Wsign-promo  -Wctor-dtor-privacy -Wnon-virtual-dtor -Wreorder -Isrc/
+COMMON_FLAGS=-Wall -Wextra -std=c++20 -pedantic -Wold-style-cast -Woverloaded-virtual -Wsign-promo  -Wctor-dtor-privacy -Wnon-virtual-dtor -Wreorder -Isrc/ -DNOMINMAX
 
 GCCFLAGS=-O2 $(COMMON_FLAGS)
 CLANGFLAGS=-O2 $(COMMON_FLAGS)

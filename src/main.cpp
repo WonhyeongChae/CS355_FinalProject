@@ -120,7 +120,7 @@
 
 int main(int argc, char* argv[]) {
     std::cout << "CS355 Final Project" << std::endl;
-    std::cout << "Authors: Jin Park and WonHyeong Chae" << std::endl;
+    std::cout << "Authors: Jin Park and Wonhyeong Chae" << std::endl;
     std::cout << "Date: 2025-03-04" << std::endl;
     std::cout << "Description: This is a simple program to test the lock-free linked list and skip list implementations." << std::endl;
 
@@ -147,6 +147,7 @@ int main(int argc, char* argv[]) {
     std::cout << "Skip list size after removal: " << skipList.size() << std::endl;
     std::cout << "Contains 1500 after removal: " << skipList.contains(1500) << std::endl;
     std::cout << "Contains 2500 after removal: " << skipList.contains(2500) << std::endl;
+    std::cout << "[Validate] " << (skipList.validate() ? "OK" : "FAIL") << std::endl;
 
     CloseHandle(h1);
     CloseHandle(h2);
